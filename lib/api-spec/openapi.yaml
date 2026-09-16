@@ -1,0 +1,232 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: facilities
+    description: Hospital and doctor discovery
+  - name: care
+    description: Appointments and consultation rooms
+  - name: assistant
+    description: JARVIS health assistant
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /hospitals:
+    get:
+      operationId: listHospitals
+      tags: [facilities]
+      summary: List nearby hospitals and health centres
+      parameters:
+        - name: query
+          in: query
+          required: false
+          schema: { type: string }
+        - name: emergency
+          in: query
+          required: false
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: Hospital list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Hospital"
+  /doctors:
+    get:
+      operationId: listDoctors
+      tags: [facilities]
+      summary: List available doctors
+      parameters:
+        - name: specialty
+          in: query
+          required: false
+          schema: { type: string }
+        - name: mode
+          in: query
+          required: false
+          schema: { type: string, enum: [video, in-person] }
+      responses:
+        "200":
+          description: Doctor list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Doctor"
+  /appointments:
+    get:
+      operationId: listAppointments
+      tags: [care]
+      summary: List appointments for the current demo user
+      responses:
+        "200":
+          description: Appointment list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+    post:
+      operationId: createAppointment
+      tags: [care]
+      summary: Book an appointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentInput"
+      responses:
+        "201":
+          description: Created appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+  /consultations/room:
+    post:
+      operationId: createConsultationRoom
+      tags: [care]
+      summary: Create a shareable video consultation room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsultationRoomInput"
+      responses:
+        "201":
+          description: Consultation room
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsultationRoom"
+  /jarvis:
+    post:
+      operationId: askJarvis
+      tags: [assistant]
+      summary: Ask the JARVIS health navigation assistant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JarvisInput"
+      responses:
+        "200":
+          description: Assistant reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JarvisResponse"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    Hospital:
+      type: object
+      required: [id, name, type, district, distanceKm, emergency, address, phone, lat, lng, openNow]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        type: { type: string }
+        district: { type: string }
+        distanceKm: { type: number }
+        emergency: { type: boolean }
+        address: { type: string }
+        phone: { type: string }
+        lat: { type: number }
+        lng: { type: number }
+        openNow: { type: boolean }
+    Doctor:
+      type: object
+      required: [id, name, specialty, facility, languages, modes, rating, nextSlot]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        specialty: { type: string }
+        facility: { type: string }
+        languages:
+          type: array
+          items: { type: string }
+        modes:
+          type: array
+          items: { type: string, enum: [video, in-person] }
+        rating: { type: number }
+        nextSlot: { type: string }
+    Appointment:
+      type: object
+      required: [id, doctorId, doctorName, specialty, date, time, mode, status]
+      properties:
+        id: { type: string }
+        doctorId: { type: string }
+        doctorName: { type: string }
+        specialty: { type: string }
+        date: { type: string }
+        time: { type: string }
+        mode: { type: string, enum: [video, in-person] }
+        status: { type: string, enum: [confirmed, pending, completed] }
+        roomName: { type: ["string", "null"] }
+    AppointmentInput:
+      type: object
+      required: [doctorId, date, time, mode]
+      properties:
+        doctorId: { type: string, minLength: 1 }
+        date: { type: string, minLength: 1 }
+        time: { type: string, minLength: 1 }
+        mode: { type: string, enum: [video, in-person] }
+    ConsultationRoom:
+      type: object
+      required: [roomName, provider, joinUrl]
+      properties:
+        roomName: { type: string }
+        provider: { type: string, enum: [jitsi] }
+        joinUrl: { type: string, format: uri }
+    ConsultationRoomInput:
+      type: object
+      required: [doctorId]
+      properties:
+        doctorId: { type: string, minLength: 1 }
+    JarvisInput:
+      type: object
+      required: [query]
+      properties:
+        query: { type: string, minLength: 1, maxLength: 2000 }
+        role: { type: ["string", "null"] }
+        lastMedicine: { type: ["string", "null"] }
+    JarvisResponse:
+      type: object
+      required: [reply, source]
+      properties:
+        reply: { type: string }
+        source: { type: string, enum: [local, provider] }
+

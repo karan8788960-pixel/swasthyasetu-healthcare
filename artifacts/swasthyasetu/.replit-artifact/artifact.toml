@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "SwasthyaSetu"
+description = "A rural healthcare platform connecting patients, doctors, health workers, and administrators with secure OTP sign-in, hospital discovery, teleconsultation, and the JARVIS health assistant."
+version = "1.0.0"
+id = "artifacts/swasthyasetu"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25935
+
+[services.development]
+run = "pnpm --filter @workspace/swasthyasetu run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/swasthyasetu", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/swasthyasetu/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25935"
+BASE_PATH = "/"
